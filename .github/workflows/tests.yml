@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -22,11 +23,51 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests and coverage
+      - name: Run unit tests
+        run: npx jest --runInBand tests/service.user.test.js tests/controller.user.test.js tests/controller.url.test.js tests/middleware.auth.test.js
+
+  api-tests:
+    name: API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run API tests
+        run: npx jest --runInBand tests/routes.url.test.js tests/routes.user.test.js
+
+  coverage:
+    name: Coverage Report
+    needs: [unit-tests, api-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run all tests and coverage
         run: npm test
 
       - name: Upload coverage report
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jest-coverage
