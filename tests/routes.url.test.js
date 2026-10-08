@@ -38,4 +38,20 @@ describe('URL API routes', () => {
   test('exposes the admin route', async () => {
     await request(app).get('/admin').expect(200, { admin: true });
   });
+
+  test('returns 404 for an unsupported URL method', async () => {
+    await request(app).delete('/').expect(404);
+  });
+
+  test('returns 404 for an unknown URL route', async () => {
+    await request(app).get('/abc/unknown/path').expect(404);
+  });
+
+  test('rejects malformed JSON requests', async () => {
+    await request(app)
+      .post('/')
+      .set('Content-Type', 'application/json')
+      .send('{invalid-json')
+      .expect(400);
+  });
 });

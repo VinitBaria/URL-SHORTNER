@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Run unit tests
-        run: npx jest --runInBand tests/service.user.test.js tests/controller.user.test.js tests/controller.url.test.js tests/middleware.auth.test.js
+        run: npx jest --runInBand tests/service.user.test.js tests/controller.user.test.js tests/controller.url.test.js tests/middleware.auth.test.js tests/models.test.js
 
   api-tests:
     name: API Tests
@@ -67,7 +67,29 @@ jobs:
       - name: Run all tests and coverage
         run: npm test
 
+      - name: Add coverage to job summary
+        if: success()
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const summary = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8')).total;
+          const row = (name) => `| ${name} | ${summary[name].pct}% (${summary[name].covered}/${summary[name].total}) |`;
+          const report = [
+            '## Test Coverage',
+            '',
+            '| Metric | Coverage |',
+            '| --- | ---: |',
+            row('statements'),
+            row('branches'),
+            row('functions'),
+            row('lines'),
+            '',
+          ].join('\n');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, report);
+          NODE
+
       - name: Upload coverage report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jest-coverage

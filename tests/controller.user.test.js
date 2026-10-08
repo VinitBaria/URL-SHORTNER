@@ -86,6 +86,33 @@ describe('user controller', () => {
     )).rejects.toThrow('database unavailable');
   });
 
+  test('uses production cookie settings and a configured expiration', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalCookieMaxAge = process.env.COOKIE_MAX_AGE;
+    process.env.NODE_ENV = 'production';
+    process.env.COOKIE_MAX_AGE = '60000';
+    User.findOne.mockResolvedValue({ _id: 'user-1' });
+    Setuser.mockResolvedValue('signed-token');
+    Item.find.mockResolvedValue([]);
+    const res = response();
+
+    await findUserByEmailAndPassword(
+      { body: { email: 'ada@example.com', password: 'secret' } },
+      res,
+    );
+
+    expect(res.cookie).toHaveBeenCalledWith('uid', 'signed-token', expect.objectContaining({
+      secure: true,
+      httpOnly: true,
+      expires: expect.any(Date),
+    }));
+
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalCookieMaxAge === undefined) delete process.env.COOKIE_MAX_AGE;
+    else process.env.COOKIE_MAX_AGE = originalCookieMaxAge;
+  });
+
   test('propagates a signup database failure', async () => {
     User.create.mockRejectedValue(new Error('duplicate email'));
 

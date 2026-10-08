@@ -25,4 +25,12 @@ describe('user routes', () => {
     await request(app).post('/user/login').send('email=ada%40example.com&password=secret')
       .expect(200, { loggedIn: true });
   });
+
+  test('returns 404 for an unknown user route', async () => {
+    await request(app).get('/user/password-reset').expect(404);
+  });
+
+  test('rejects unsupported methods on the login route', async () => {
+    await request(app).delete('/user/login').expect(404);
+  });
 });
